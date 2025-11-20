@@ -1,20 +1,18 @@
 """
-亞洲人生存大挑戰（七關版）
+亞洲人生存大挑戰
 
 關卡設計：
-1. 出生：決定性別（固定規則）
-2. 大學志願：選科系（關鍵字 + 固定評分）
-3. 第一份工作：三條人生起跑線（固定三選一 + 固定評分）
-4. 結婚對象：三種對象（固定三選一 + 固定評分）
-5. 生小孩與否（固定三選一 + 固定評分）
-6. 過年大拷問：AI 隨機生成長輩問題，AI 判斷難度，AI 分析玩家回答風格，
-   程式根據「難度 + 是否答得剛剛好（balanced）」做硬性扣分 / 加分。
-7. 親戚稱謂魔王關：AI 生成親戚稱謂難題 + 正解 + 難度，
-   程式根據「難度 + 玩家是否答對」做硬性扣分 / 加分。
+1. 出生
+2. 大學志願
+3. 第一份工作
+4. 結婚對象
+5. 生小孩
+6. 過年大拷問
+7. 親戚稱謂魔王關
 
-共同規則：
+規則：
 - 初始 HP = 100。
-- 每關至少寫下一則「人生小筆記」（B + C 風格：有點靠北又是短句金句）。
+- 每關至少寫下一則「人生小筆記」
 - 遊戲中任一處輸入：note → 顯示目前的人生小筆記清單。
 - HP 歸零 → Game Over。
 - 撐過七關且 HP > 0 → 視為通關。
@@ -24,6 +22,7 @@ import json
 import time
 import pathlib
 from typing import Dict, Any, List
+import re
 
 import openai  # 請先 pip install openai
 
@@ -49,15 +48,12 @@ STATE_DIR = OUTPUT_DIR / "state"
 STATE_PATH = STATE_DIR / "save_1.json"
 SUMMARY_PATH = OUTPUT_DIR / "summary_1.txt"
 
-# 難度 → 固定評分標準
 DIFFICULTY_SCORES = {
-    "low":     {"correct": 5,  "wrong": -55},
-    "medium":  {"correct": 10,  "wrong": -45},
-    "high":    {"correct": 15, "wrong": -35},
-    "extreme": {"correct": 20, "wrong": -25},
+    "low":     {"correct": 1,  "wrong": -65},
+    "medium":  {"correct": 3,  "wrong": -55},
+    "high":    {"correct": 5, "wrong": -45},
+    "extreme": {"correct": 7, "wrong": -35},
 }
-
-# ======== OpenAI 基本封裝 ========
 
 def setup_openai():
     """啟動程式時詢問 API Key，直接設定給 openai。"""
@@ -72,7 +68,7 @@ def setup_openai():
 def call_llm(system_prompt: str,
              user_prompt: str,
              temperature: float = 0.7) -> str:
-    """呼叫 LLM，回傳文字內容（不做 JSON 解析）。"""
+
     resp = openai.ChatCompletion.create(
         model=MODEL_NAME,
         messages=[
@@ -112,7 +108,6 @@ def call_llm_json(system_prompt: str,
     raise ValueError(f"無法解析為合法 JSON，請檢查 LLM 輸出：\n{content}")
 
 
-# ======== 遊戲狀態與工具 ========
 
 def init_game_state() -> Dict[str, Any]:
     """初始化遊戲狀態"""
@@ -183,7 +178,6 @@ def get_player_input(prompt: str,
 
 
 def append_note(state: Dict[str, Any], note: str):
-    """新增人生小筆記（去除空白與重複）"""
     note = (note or "").strip()
     if note and note not in state["notes"]:
         state["notes"].append(note)
@@ -197,7 +191,7 @@ def generate_outcome_text(stage_name: str,
     """
     統一讓 LLM 幫忙寫：
     - result：這一關的故事結果敘述
-    - note：一則人生小筆記（B+C 風格：靠北又是短句金句）
+    - note：一則人生小筆記（風格：靠北又是短句金句）
 
     回傳：
     {
@@ -265,14 +259,10 @@ def generate_outcome_text(stage_name: str,
     return {"result": result, "note": note}
 
 
-# ======== 各關卡：評分與流程 ========
-
-# --- 第一關：出生 ---
-
 def play_stage_1_birth(state: Dict[str, Any]) -> Dict[str, Any]:
     stage_name = "第一關：出生決定性別"
     print("你還沒看到世界長什麼樣，產房外一群長輩已經在猜你的性別。")
-    print("在這個超傳統、設定有點誇張的亞洲家庭裡，性別會直接決定開局難度。\n")
+    print("在這個超傳統、有點誇張的亞洲家庭裡，性別會直接決定開局難度。\n")
 
     gender = get_player_input(
         "請選擇你出生的性別（輸入 male / female / other）：",
@@ -284,18 +274,18 @@ def play_stage_1_birth(state: Dict[str, Any]) -> Dict[str, Any]:
     if gender == "female":
         print("\n產房外瞬間安靜三秒，空氣裡飄著一種說不出口的失落。")
         print("有人說：「唉…女兒也不錯啦……」但語氣一點都沒說服力。\n")
-        hp_change = -30
+        hp_change = -10000
         tag = "female_hard_mode"
         note = "這不是妳的錯，是這片地圖太難。"
     elif gender == "other":
         print("\n你拒絕被性別二分表格限制，系統有點當機，但你成功在世界上留了一個問號。\n")
-        hp_change = -20
+        hp_change = -99
         tag = "non_binary"
         note = "世界很愛要你勾『男/女』，你可以先勾自己。"
     else:
         print("\n長輩們露出一種「好，至少以後有人可以扛房貸」的表情。")
         print("你安全出生，也背上了一個看不見的『以後要有出息』 Buff。\n")
-        hp_change = 0
+        hp_change = -10
         tag = "male_default"
         note = "一出生就被預約責任，連選單都沒看見。"
 
@@ -324,9 +314,6 @@ def play_stage_1_birth(state: Dict[str, Any]) -> Dict[str, Any]:
     state["turn"] += 1
     return state
 
-
-# --- 第二關：大學志願 ---
-
 def classify_major_and_score(major_text: str) -> (int, str):
     """
     依科系關鍵字判定類型與 HP 變化
@@ -341,24 +328,23 @@ def classify_major_and_score(major_text: str) -> (int, str):
                     "音樂", "戲劇", "舞蹈", "體育"]
 
     tag = "major_other"
-    hp_change = -10  # 預設：長輩有點不滿，但還沒到爆炸
+    hp_change = -10  # default：長輩有點不滿，但還沒到爆炸
 
     if any(k in text for k in high_keywords):
         hp_change = 10
         tag = "major_high_status"
     elif any(k in text for k in mid_keywords):
-        hp_change = 0
+        hp_change = -20
         tag = "major_mid"
     elif any(k in text for k in low_keywords):
-        hp_change = -20
+        hp_change = -30
         tag = "major_low_status"
     else:
         # 沒明確命中，就當冷門或非典型
-        hp_change = -10
+        hp_change = -20
         tag = "major_other"
 
     return hp_change, tag
-
 
 def play_stage_2_major(state: Dict[str, Any]) -> Dict[str, Any]:
     stage_name = "第二關：大學志願"
@@ -409,57 +395,79 @@ def play_stage_2_major(state: Dict[str, Any]) -> Dict[str, Any]:
     state["turn"] += 1
     return state
 
-
-# --- 第三關：第一份工作（固定三選一） ---
-
 def play_stage_3_job(state: Dict[str, Any]) -> Dict[str, Any]:
     stage_name = "第三關：第一份工作"
-    print("你畢業了，來到人生第一份工作的十字路口。")
-    print("桌上有三封錄取通知，各自通往不同類型的「被比較人生」。\n")
+    print("你畢業了，站在第一份工作的十字路口。")
+    print("世界給你三個工作，但它們背後的『社會眼光』都不太一樣……\n")
 
-    jobs = [
-        {
-            "id": "1",
-            "title": "連鎖餐飲店基層員工",
-            "desc": "工時爆長、輪班制、底薪微薄，但至少不用坐在辦公室。",
-            "hp_change": -15,
-            "tag": "job_low_status"
-        },
-        {
-            "id": "2",
-            "title": "科技業輪班工程師",
-            "desc": "薪水漂亮、工時更漂亮，過年回家長輩會誇你，但你不一定還有命回家。",
-            "hp_change": 10,
-            "tag": "job_high_pay"
-        },
-        {
-            "id": "3",
-            "title": "基層公務員",
-            "desc": "收入普通、生活穩定，長輩會說「至少有鐵飯碗」，同學會說「你好保守」。",
-            "hp_change": 5,
-            "tag": "job_stable"
-        },
-    ]
+    system_prompt = (
+        "你是一名人生模擬遊戲的關卡設計師，要設計「第一份工作」三個職缺選項。\n"
+        "請以繁體中文輸出【純 JSON】格式，不要加註解、不要加變數名稱、不要加文字描述。\n"
+        "輸出格式必須完全如下（不可缺任何 key）：\n\n"
+        "{\n"
+        "  \"jobs\": [\n"
+        "    {\n"
+        "      \"title\": \"...\",\n"
+        "      \"description\": \"...\",\n"
+        "      \"hidden_hp\": -15,\n"
+        "      \"tag\": \"job_xxx\"\n"
+        "    },\n"
+        "    {\n"
+        "      \"title\": \"...\",\n"
+        "      \"description\": \"...\",\n"
+        "      \"hidden_hp\": 5,\n"
+        "      \"tag\": \"job_xxx\"\n"
+        "    },\n"
+        "    {\n"
+        "      \"title\": \"...\",\n"
+        "      \"description\": \"...\",\n"
+        "      \"hidden_hp\": 10,\n"
+        "      \"tag\": \"job_xxx\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n\n"
+        "規則：\n"
+        "1. 三個工作請務必各自不同。\n"
+        "2. description 80～140 字，描述現實壓力、家庭期待與工作氛圍。\n"
+        "3. hidden_hp 範圍 -45、0、+20(由低到高分別為不符合到符合亞洲家族期待)。(可以盡可能極端）\n"
+        "4. tag = job_high_pay / job_low_status / job_stable / job_creative 等英文字標籤。\n"
+        "5. 請務必輸出【合法 JSON】（最外層為大括號）。\n"
+    )
 
-    print("請從以下三份工作中選擇一個：")
-    for job in jobs:
-        print(f"{job['id']}. {job['title']}：{job['desc']}")
-    print()
 
+    user_prompt = "請產生三個第一份工作的選項。"
+    data = call_llm_json(system_prompt, user_prompt, temperature=0.8)
+
+    jobs = data.get("jobs", [])
+    if not isinstance(jobs, list) or len(jobs) < 3:
+        print("AI 生成工作列表失敗，改用預設值避免遊戲壞掉。")
+        jobs = [
+            {"title": "連鎖餐飲店基層員工", "description": "快節奏、長工時、薪水普通，長輩覺得不夠體面。", "hidden_hp": -25, "tag": "job_low_status"},
+            {"title": "科技業輪班工程師", "description": "薪水高但爆肝，家人滿意但你可能沒週末。", "hidden_hp": 10, "tag": "job_high_pay"},
+            {"title": "基層公務員", "description": "穩定、規律、長輩最愛聽到，社會期待值很高。", "hidden_hp": 5, "tag": "job_stable"},
+        ]
+
+    print("以下是三份由命運排到你面前的工作：\n")
+    for idx, job in enumerate(jobs, 1):
+        print(f"{idx}. {job['title']}")
+        print(f"   {job['description']}\n")
+
+    # === 玩家選擇 ===
     while True:
         choice = get_player_input("請輸入 1 / 2 / 3 選擇你的第一份工作：", state)
-        selected = next((j for j in jobs if j["id"] == choice), None)
-        if selected:
+        if choice in ["1", "2", "3"]:
+            selected = jobs[int(choice)-1]
             break
         print("看起來你選到不存在的工作，再試一次（輸入 1 / 2 / 3）。")
 
-    hp_change = selected["hp_change"]
-    tag = selected["tag"]
+    hp_change = int(selected.get("hidden_hp", 0))
+    tag = selected.get("tag", "job_misc")
+
     state["hp"] += hp_change
     if state["hp"] < 0:
         state["hp"] = 0
 
-    context = "你拿著錄取通知，心裡在算的不只是薪水，還有以後過年被問幾句。"
+    context = f"你選擇了「{selected['title']}」，也等於選了某種人生版本。"
     outcome = generate_outcome_text(
         stage_name=stage_name,
         context=context,
@@ -470,10 +478,12 @@ def play_stage_3_job(state: Dict[str, Any]) -> Dict[str, Any]:
 
     append_note(state, outcome["note"])
 
+    # === log ===
     log_entry = {
         "turn": state["turn"],
         "stage": stage_name,
         "choice": selected["title"],
+        "description": selected.get("description", ""),
         "hp_change": hp_change,
         "hp_after": state["hp"],
         "note": outcome["note"],
@@ -481,6 +491,7 @@ def play_stage_3_job(state: Dict[str, Any]) -> Dict[str, Any]:
     }
     state["logs"].append(log_entry)
 
+    # === 輸出結果 ===
     print("\n【結果】")
     print(outcome["result"])
     print(f"\n【HP 變化】{hp_change} → 目前 HP：{state['hp']}")
@@ -491,58 +502,102 @@ def play_stage_3_job(state: Dict[str, Any]) -> Dict[str, Any]:
 
     state["turn"] += 1
     return state
-
-
-# --- 第四關：結婚對象（三選一，固定評分） ---
 
 def play_stage_4_marriage(state: Dict[str, Any]) -> Dict[str, Any]:
     stage_name = "第四關：結婚對象"
-    print("你的人生來到「長輩開始問婚事」的階段。")
-    print("桌上出現三個對象，感覺不是在選伴侶，是在選家族 KPI。\n")
 
-    partners = [
-        {
-            "id": "1",
-            "title": "家世很好但個性不太好的人",
-            "desc": "長輩超愛，朋友替你擔心，你自己有點不太確定。",
-            "hp_change": 5,
-            "tag": "partner_family_approved"
-        },
-        {
-            "id": "2",
-            "title": "條件普通但個性很好的人",
-            "desc": "你跟他相處很舒服，長輩覺得「還行啦」，沒有特別驚艷。",
-            "hp_change": 0,
-            "tag": "partner_balanced"
-        },
-        {
-            "id": "3",
-            "title": "收入較低但非常契合的靈魂伴侶",
-            "desc": "你們互相懂彼此，但長輩覺得這段關係「沒有未來」。",
-            "hp_change": -15,
-            "tag": "partner_family_disapproved"
-        },
-    ]
+    print("你的人生來到『長輩開始問婚事』的階段。")
+    print("桌上出現三個對象，看起來不像選愛情，比較像選家族KPI。\n")
 
-    print("請從以下三位對象中選擇一個：")
-    for p in partners:
-        print(f"{p['id']}. {p['title']}：{p['desc']}")
-    print()
+    # === AI 生成三個伴侶選項 ===
+    system_prompt = (
+        "你是一名人生模擬遊戲的關卡設計師，要設計『結婚對象』的三個選項。\n"
+        "請用繁體中文，並【只能輸出 JSON】。\n\n"
+        "輸出格式必須如下（不可多、不可信缺）：\n"
+        "{\n"
+        "  \"partners\": [\n"
+        "    {\n"
+        "      \"title\": \"...\",\n"
+        "      \"description\": \"...\",\n"
+        "      \"hidden_hp\": -15,\n"
+        "      \"tag\": \"partner_xxx\"\n"
+        "    },\n"
+        "    {\n"
+        "      \"title\": \"...\",\n"
+        "      \"description\": \"...\",\n"
+        "      \"hidden_hp\": 5,\n"
+        "      \"tag\": \"partner_xxx\"\n"
+        "    },\n"
+        "    {\n"
+        "      \"title\": \"...\",\n"
+        "      \"description\": \"...\",\n"
+        "      \"hidden_hp\": 10,\n"
+        "      \"tag\": \"partner_xxx\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n\n"
+        "規則：\n"
+        "1. 三位對象必須彼此明顯不同（符合亞洲期待的美德婦女、亞洲父母尚可接受的類型、亞洲父母不能接受的類型）\n"
+        "2. description 需 80～140 字，描述家庭期待、性格氛圍、可能的社會壓力。\n"
+        "3. hidden_hp = +10、0、-45。（由高到低分別為符合期待的、尚可的、不能接受的）\n"
+        "4. tag = partner_family_approved / partner_balanced / partner_disapproved 等英文字。\n"
+        "5. 請務必輸出標準 JSON（最外層需為物件）。"
+        "6. title必須要是他的類型、並且內容不要特別提及男女）。"
+    )
 
+    user_prompt = "請產生三位結婚對象的選項，只輸出 JSON。"
+
+    try:
+        data = call_llm_json(system_prompt, user_prompt, temperature=0.8)
+        partners = data.get("partners", [])
+        if not isinstance(partners, list) or len(partners) < 3:
+            raise ValueError("AI 輸出的 partners 格式不正確。")
+    except Exception as e:
+        print(f"[警告] AI 生成資料有問題，用預設值替代。錯誤：{e}")
+        partners = [
+            {
+                "title": "家世很好但脾氣很差的人",
+                "description": "來自富裕家庭、資源多，但個性容易暴怒，雙方家庭壓力龐大。",
+                "hidden_hp": 5,
+                "tag": "partner_family_approved"
+            },
+            {
+                "title": "條件普通但個性很好的人",
+                "description": "家庭背景普通、個性溫和，長輩不會反對，但也不會特別滿意。",
+                "hidden_hp": 0,
+                "tag": "partner_balanced"
+            },
+            {
+                "title": "收入較低但非常契合的靈魂伴侶",
+                "description": "個性契合、價值觀同步，但長輩覺得收入不穩定，壓力可能很大。",
+                "hidden_hp": -15,
+                "tag": "partner_family_disapproved"
+            }
+        ]
+
+    print("以下是 AI 幫你安排的三位結婚候選人：\n")
+    for idx, p in enumerate(partners, 1):
+        print(f"{idx}. {p['title']}")
+        print(f"   {p['description']}\n")
+
+    # === 玩家選擇 ===
     while True:
         choice = get_player_input("請輸入 1 / 2 / 3 選擇你的結婚對象：", state)
-        selected = next((p for p in partners if p["id"] == choice), None)
-        if selected:
+        if choice in ["1", "2", "3"]:
+            selected = partners[int(choice) - 1]
             break
-        print("這個對象目前不在劇情名單裡，再試一次（輸入 1 / 2 / 3）。")
+        print("這位對象目前不在候選名單，再試一次（輸入 1 / 2 / 3）。")
 
-    hp_change = selected["hp_change"]
-    tag = selected["tag"]
+    # === 使用 hidden_hp 進行扣血 ---
+    hp_change = int(selected.get("hidden_hp", 0))
+    tag = selected.get("tag", "partner_misc")
+
     state["hp"] += hp_change
     if state["hp"] < 0:
         state["hp"] = 0
 
-    context = "婚禮照片看起來很漂亮，但最難搞的從來不是婚禮，而是兩個家族的期待。"
+    # === 故事 & 小筆記 ===
+    context = f"你選擇了「{selected['title']}」。婚禮不是最累的，最累的是兩個家族的交鋒。"
     outcome = generate_outcome_text(
         stage_name=stage_name,
         context=context,
@@ -553,10 +608,12 @@ def play_stage_4_marriage(state: Dict[str, Any]) -> Dict[str, Any]:
 
     append_note(state, outcome["note"])
 
+    # === log ===
     log_entry = {
         "turn": state["turn"],
         "stage": stage_name,
         "choice": selected["title"],
+        "description": selected.get("description", ""),
         "hp_change": hp_change,
         "hp_after": state["hp"],
         "note": outcome["note"],
@@ -564,6 +621,7 @@ def play_stage_4_marriage(state: Dict[str, Any]) -> Dict[str, Any]:
     }
     state["logs"].append(log_entry)
 
+    # === 輸出結果 ===
     print("\n【結果】")
     print(outcome["result"])
     print(f"\n【HP 變化】{hp_change} → 目前 HP：{state['hp']}")
@@ -574,9 +632,6 @@ def play_stage_4_marriage(state: Dict[str, Any]) -> Dict[str, Any]:
 
     state["turn"] += 1
     return state
-
-
-# --- 第五關：生小孩與否（三選一，固定評分） ---
 
 def play_stage_5_children(state: Dict[str, Any]) -> Dict[str, Any]:
     stage_name = "第五關：生小孩與否"
@@ -587,21 +642,18 @@ def play_stage_5_children(state: Dict[str, Any]) -> Dict[str, Any]:
         {
             "id": "1",
             "title": "生一個小孩",
-            "desc": "長輩會說「至少有傳宗接代」，但又會問為什麼不再生一個陪伴。",
             "hp_change": 0,
             "tag": "child_one"
         },
         {
             "id": "2",
             "title": "生兩個小孩",
-            "desc": "傳統價值大滿貫：一男一女最好，但你的睡眠品質會被直接清空。",
             "hp_change": 10,
             "tag": "child_two"
         },
         {
             "id": "3",
             "title": "不生小孩",
-            "desc": "你選擇把人生拿回一點自主權，長輩則拿出「誰幫你送終」的經典台詞。",
             "hp_change": -25,
             "tag": "child_none"
         },
@@ -609,7 +661,7 @@ def play_stage_5_children(state: Dict[str, Any]) -> Dict[str, Any]:
 
     print("請從以下三個選項中選擇：")
     for o in options:
-        print(f"{o['id']}. {o['title']}：{o['desc']}")
+        print(f"{o['id']}. {o['title']}")
     print()
 
     while True:
@@ -659,17 +711,7 @@ def play_stage_5_children(state: Dict[str, Any]) -> Dict[str, Any]:
     return state
 
 
-# --- 第六關：過年大拷問（AI 出題 + AI 判風格 + 程式硬性評分） ---
-
 def generate_newyear_question() -> Dict[str, Any]:
-    """
-    由 AI 產生過年長輩拷問題目與難度。
-    回傳格式：
-    {
-      "question": "...",
-      "difficulty": "low/medium/high/extreme"
-    }
-    """
     system_prompt = (
         "你是一個專門負責設計「過年長輩拷問」題目的出題官。\n"
         "請用繁體中文，設計一題典型的過年長輩會問的問題，"
@@ -693,12 +735,7 @@ def generate_newyear_question() -> Dict[str, Any]:
 
     return {"question": question, "difficulty": difficulty}
 
-
 def classify_newyear_answer(question: str, answer: str) -> str:
-    """
-    讓 AI 判斷玩家回答風格：
-    回傳 answer_style ∈ {"balanced", "bragging", "too_humble", "defensive", "refuse", "other"}
-    """
     system_prompt = (
         "你是一個語氣分析器，專門判斷在華人家庭過年場合中，"
         "晚輩回答長輩拷問時的風格。\n"
@@ -725,7 +762,6 @@ def classify_newyear_answer(question: str, answer: str) -> str:
         style = "other"
     return style
 
-
 def play_stage_6_newyear(state: Dict[str, Any]) -> Dict[str, Any]:
     stage_name = "第六關：過年大拷問"
 
@@ -742,7 +778,6 @@ def play_stage_6_newyear(state: Dict[str, Any]) -> Dict[str, Any]:
 
     style = classify_newyear_answer(question, answer)
 
-    # 根據難度與回答風格做硬性評分
     score_table = DIFFICULTY_SCORES[difficulty]
     if style == "balanced":
         hp_change = score_table["correct"]
@@ -794,93 +829,123 @@ def play_stage_6_newyear(state: Dict[str, Any]) -> Dict[str, Any]:
     return state
 
 
-# --- 第七關：親戚稱謂魔王關（AI 出題 + AI 決定難度，程式硬性評分） ---
+COMMON_KINSHIP_KEYWORDS = [
+    "公", "婆", "姑", "舅", "姨", "伯", "叔", "堂", "表", "外",
+    "丈", "嫂", "姪", "孫", "曾", "玄"
+]
+
+def is_reasonable_kinship_answer(ans: str) -> bool:
+    ans = ans.strip()
+
+    # 必須為中文
+    if not re.fullmatch(r"[\u4e00-\u9fff]+", ans):
+        return False
+
+    # 避免太長（超過四字幾乎不會是稱謂）
+    if len(ans) > 4:
+        return False
+
+    # 必須包含親屬字根
+    if not any(k in ans for k in COMMON_KINSHIP_KEYWORDS):
+        return False
+
+    return True
 
 def generate_kinship_question() -> Dict[str, Any]:
-    """
-    由 AI 產生一題親戚稱謂問題。
-    回傳格式：
-    {
-      "question": "...",
-      "difficulty": "low/medium/high/extreme",
-      "answers": ["丈公", "姑婆的公公"]
-    }
-    """
     system_prompt = (
-        "你是一個專門出「華人親戚稱謂」考題的出題官，"
-        "要設計給台灣人玩的稱謂魔王關。\n"
-        "請用繁體中文，產生一題讓人容易崩潰的親戚稱謂問題，例如：\n"
-        "- 「姑婆的公公要怎麼稱呼？」答案：丈公\n"
-        "- 「媽媽的阿公的兄弟要怎麼稱呼？」答案：姑丈公\n"
-        "請自創一題，並提供：\n"
-        "- question：題目文字\n"
-        "- difficulty：low/medium/high/extreme（難度愈高，關係愈繞口）\n"
-        "- answers：一個或多個可以接受的正確稱呼（字串陣列）\n"
-        "請只輸出 JSON 物件，如：\n"
-        "{\n"
-        "  \"question\": \"姑婆的公公要怎麼稱呼？\",\n"
-        "  \"difficulty\": \"high\",\n"
-        "  \"answers\": [\"丈公\"]\n"
-        "}"
+        "你是一位專門設計華人親戚稱謂魔王題的出題官。\n"
+        "題型格式固定為：「你的 Y 要怎麼稱呼？」\n"
+        "請產生一題難度 medium/high/extreme 的題目。\n"
+        "請確保 Y 是由 2～6 個親屬關係所組成，例如：\n"
+        "「你的表哥的老婆的爸爸」、「你的姨丈的姐姐的兒子」。\n"
+        "難度說明：\n"
+        "- medium：2～3 層親屬關係\n"
+        "- high：3～4 層親屬關係\n"
+        "- extreme：4～6 層親屬關係，且不得重複角色\n"
+        "輸出 JSON：question、difficulty、answers。\n"
+        "answers 請提供正確稱謂（至少 1 個），不得包含錯誤稱謂或不屬於華人稱謂系統的詞語。"
     )
 
-    user_prompt = "請產生一題親戚稱謂魔王題。"
-    data = call_llm_json(system_prompt, user_prompt, temperature=0.9)
+    # --- AI 出題函式 ---
+    def ask_ai_once():
+        data = call_llm_json(system_prompt, "請出一題親戚稱謂魔王題。", temperature=0.9)
 
-    question = str(data.get("question", "姑婆的公公要怎麼稱呼？")).strip()
-    difficulty = str(data.get("difficulty", "high")).strip().lower()
-    answers = data.get("answers", [])
-    if not isinstance(answers, list):
-        answers = [str(answers)]
-    answers = [str(a).strip() for a in answers if str(a).strip()]
+        question = str(data.get("question", "")).strip()
+        difficulty = str(data.get("difficulty", "high")).strip().lower()
+        answers = data.get("answers", [])
 
-    if difficulty not in DIFFICULTY_SCORES:
-        difficulty = "high"
-    if not answers:
-        answers = ["丈公"]
+        if not isinstance(answers, list):
+            answers = [answers]
 
+        # 清理答案
+        answers = [str(a).strip() for a in answers if a]
+
+        return question, difficulty, answers
+
+    # first attempt
+    q1, d1, a1 = ask_ai_once()
+    valid_a1 = [a for a in a1 if is_reasonable_kinship_answer(a)]
+
+    if valid_a1:
+        return {
+            "question": q1,
+            "difficulty": d1,
+            "answers": valid_a1,
+        }
+    # second attempt
+    q2, d2, a2 = ask_ai_once()
+    valid_a2 = [a for a in a2 if is_reasonable_kinship_answer(a)]
+
+    if valid_a2:
+        return {
+            "question": q2,
+            "difficulty": d2,
+            "answers": valid_a2,
+        }
+
+    # --- Fallback ---
     return {
-        "question": question,
-        "difficulty": difficulty,
-        "answers": answers,
+        "question": "姑婆的公公要怎麼稱呼？",
+        "difficulty": "extreme",
+        "answers": ["丈公"],
     }
 
-
 def normalize_kinship_answer(ans: str) -> str:
-    """簡單正規化玩家輸入（去空白、全形空格等）。"""
     return ans.replace(" ", "").replace("　", "").strip()
 
-
 def check_kinship_correct(player_answer: str, answers: List[str]) -> bool:
-    norm_player = normalize_kinship_answer(player_answer)
-    for a in answers:
-        if not a:
-            continue
-        norm_a = normalize_kinship_answer(a)
-        if norm_a and norm_a in norm_player:
-            return True
-        if norm_player and norm_player in norm_a:
-            return True
-    return False
+    norm_p = normalize_kinship_answer(player_answer)
 
+    for ans in answers:
+        ans = normalize_kinship_answer(ans)
+        if not ans:
+            continue
+
+        # 完全相同 or 一部份相符即算對
+        if norm_p == ans or norm_p in ans or ans in norm_p:
+            return True
+
+    return False
 
 def play_stage_7_kinship(state: Dict[str, Any]) -> Dict[str, Any]:
     stage_name = "第七關：親戚稱謂魔王關"
 
-    print("最後一關，你被丟進家族族譜的迷宮。")
-    print("長輩決定考你一題「你到底叫人家什麼」的稱謂魔王題。\n")
+    print("你來到最後一關，歡迎進入華人家族樹的深淵。")
+    print("長輩突然想考你：到底懂不懂『正確稱呼親戚』的玄學禮儀。\n")
 
-    q = generate_kinship_question()
-    question = q["question"]
-    difficulty = q["difficulty"]
-    answers = q["answers"]
+    data = generate_kinship_question()
+    question = data["question"]
+    difficulty = data["difficulty"]
+    answers = data["answers"]
 
-    print(f"題目來了：\n「{question}」\n")
-    player_answer = get_player_input("請輸入你覺得正確的稱呼（例如：丈公、姑丈公...）：", state)
+    print(f"題目：\n「{question}」\n")
 
-    is_correct = check_kinship_correct(player_answer, answers)
+    player_answer = get_player_input("你的回答：", state)
+
+    correct = check_kinship_correct(player_answer, answers)
     score_table = DIFFICULTY_SCORES[difficulty]
-    if is_correct:
+
+    if correct:
         hp_change = score_table["correct"]
         tag = f"kinship_correct_{difficulty}"
     else:
@@ -891,7 +956,7 @@ def play_stage_7_kinship(state: Dict[str, Any]) -> Dict[str, Any]:
     if state["hp"] < 0:
         state["hp"] = 0
 
-    context = f"你在一張看不完的家族圖前，試著把「{question}」這題念順。"
+    context = f"你在家族圖前努力解讀「{question}」。"
     outcome = generate_outcome_text(
         stage_name=stage_name,
         context=context,
@@ -900,8 +965,9 @@ def play_stage_7_kinship(state: Dict[str, Any]) -> Dict[str, Any]:
         tag=tag,
     )
 
-    append_note(state, outcome["note"])
+    append_note(state, outcome["note"])  
 
+    # --- 紀錄 log ---
     log_entry = {
         "turn": state["turn"],
         "stage": stage_name,
@@ -909,7 +975,7 @@ def play_stage_7_kinship(state: Dict[str, Any]) -> Dict[str, Any]:
         "player_answer": player_answer,
         "correct_answers": answers,
         "difficulty": difficulty,
-        "is_correct": is_correct,
+        "is_correct": correct,
         "hp_change": hp_change,
         "hp_after": state["hp"],
         "note": outcome["note"],
@@ -919,11 +985,9 @@ def play_stage_7_kinship(state: Dict[str, Any]) -> Dict[str, Any]:
 
     print("\n【結果】")
     print(outcome["result"])
-    print(f"\n【正確答案之一】{answers[0] if answers else '（題庫出問題了…就當你對一半）'}")
-    print(f"【你是否答對】{'答對' if is_correct else '答錯'}")
-    print(f"【難度等級】{difficulty}")
     print(f"【HP 變化】{hp_change} → 目前 HP：{state['hp']}")
     print(f"【人生小筆記】{outcome['note']}\n")
+    print(f"不管回答什麼，沒有主動先問好就是扣大分！")
 
     if state["hp"] <= 0:
         state["end_flag"] = "lose"
@@ -932,12 +996,7 @@ def play_stage_7_kinship(state: Dict[str, Any]) -> Dict[str, Any]:
     return state
 
 
-# ======== 最後結局回顧 ========
-
 def generate_review(state: Dict[str, Any]) -> str:
-    """
-    根據 logs 生成人生回顧，只能回顧實際走過的七關內容。
-    """
     turn_limit = len(state["logs"])
     system_prompt = (
         "你是一款遊戲《亞洲人生存大挑戰》的最後結局旁白，"
@@ -972,9 +1031,6 @@ def generate_review(state: Dict[str, Any]) -> str:
 
     review = call_llm(system_prompt, user_prompt, temperature=0.9)
     return review
-
-
-# ======== 主流程 ========
 
 def main():
     setup_openai()
@@ -1066,9 +1122,6 @@ def main():
     print(review_with_notes)
 
     print("\n謝謝你讓自己認真活過這一輪。如果哪天想重開一輪，我們再來。")
-
-
-
 
 if __name__ == "__main__":
     main()

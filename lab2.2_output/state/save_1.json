@@ -1,73 +1,91 @@
 {
-  "hp": 0,
-  "turn": 7,
+  "hp": 5,
+  "turn": 8,
   "notes": [
-    "這不是妳的錯，是這片地圖太難。",
-    "聽從內心，至少過年有話聊。",
-    "別擔心，你不是油煙機。",
-    "愛情不只是兩個人的事，還有家族的期待。",
-    "人生無對錯，只有選擇與自由。",
-    "過年拷問，真是滿滿的愛與溫馨。"
+    "一出生就被預約責任，連選單都沒看見。",
+    "追求夢想，前路坎坷但精彩。",
+    "做社工助理，要有超乎常人的忍耐力。",
+    "不是我不行，是世界太難搞。",
+    "有些人選擇不一定有對錯，重要的是對自己負責。",
+    "人生沒有捷徑，只有踏踏實實走過的路。",
+    "家族關係，比密碼還難記。"
   ],
   "logs": [
     {
       "turn": 1,
       "stage": "第一關：出生決定性別",
-      "choice": "female",
-      "hp_change": -30,
-      "hp_after": 70,
-      "note": "這不是妳的錯，是這片地圖太難。",
-      "tag": "female_hard_mode"
+      "choice": "male",
+      "hp_change": -10,
+      "hp_after": 90,
+      "note": "一出生就被預約責任，連選單都沒看見。",
+      "tag": "male_default"
     },
     {
       "turn": 2,
       "stage": "第二關：大學志願",
-      "choice": "生物機電系",
-      "hp_change": -10,
+      "choice": "美術",
+      "hp_change": -30,
       "hp_after": 60,
-      "note": "聽從內心，至少過年有話聊。",
-      "tag": "major_other"
+      "note": "追求夢想，前路坎坷但精彩。",
+      "tag": "major_low_status"
     },
     {
       "turn": 3,
       "stage": "第三關：第一份工作",
-      "choice": "連鎖餐飲店基層員工",
-      "hp_change": -15,
-      "hp_after": 45,
-      "note": "別擔心，你不是油煙機。",
-      "tag": "job_low_status"
+      "choice": "社會工作者助理",
+      "description": "面對社會上弱勢族群的困境，工作壓力重大且需要長時間投入。家人希望你能扛起家庭的經濟責任，但你卻感到無法完全滿足自己的創意與熱情。",
+      "hp_change": 0,
+      "hp_after": 60,
+      "note": "做社工助理，要有超乎常人的忍耐力。",
+      "tag": "job_stable"
     },
     {
       "turn": 4,
       "stage": "第四關：結婚對象",
-      "choice": "收入較低但非常契合的靈魂伴侶",
-      "hp_change": -15,
-      "hp_after": 30,
-      "note": "愛情不只是兩個人的事，還有家族的期待。",
-      "tag": "partner_family_disapproved"
+      "choice": "自由奔放型",
+      "description": "這位對象是個自由奔放的靈魂，對生活充滿熱情和探索的慾望。他/她可能會帶來一些新奇的體驗和快樂，但也可能會因為對傳統價值觀的不拘一格而受到家庭的反對和壓力。",
+      "hp_change": 0,
+      "hp_after": 60,
+      "note": "不是我不行，是世界太難搞。",
+      "tag": "partner_balanced"
     },
     {
       "turn": 5,
       "stage": "第五關：生小孩與否",
       "choice": "不生小孩",
       "hp_change": -25,
-      "hp_after": 5,
-      "note": "人生無對錯，只有選擇與自由。",
+      "hp_after": 35,
+      "note": "有些人選擇不一定有對錯，重要的是對自己負責。",
       "tag": "child_none"
     },
     {
       "turn": 6,
       "stage": "第六關：過年大拷問",
-      "question": "你這麼大了，為什麼還沒有對象？是不是太挑了？",
-      "answer": "等你過世我就會娶了",
+      "question": "你們家買了房子了嗎？",
+      "answer": "準備要了 到時候邀請你們來看看",
       "difficulty": "high",
-      "answer_style": "defensive",
+      "answer_style": "balanced",
+      "hp_change": 5,
+      "hp_after": 40,
+      "note": "人生沒有捷徑，只有踏踏實實走過的路。",
+      "tag": "newyear_balanced_high"
+    },
+    {
+      "turn": 7,
+      "stage": "第七關：親戚稱謂魔王關",
+      "question": "你的外公的堂妹的姪子的女兒的兒子要怎麼稱呼？",
+      "player_answer": "表妹",
+      "correct_answers": [
+        "外曾孫"
+      ],
+      "difficulty": "extreme",
+      "is_correct": false,
       "hp_change": -35,
-      "hp_after": 0,
-      "note": "過年拷問，真是滿滿的愛與溫馨。",
-      "tag": "newyear_defensive_high"
+      "hp_after": 5,
+      "note": "家族關係，比密碼還難記。",
+      "tag": "kinship_wrong_extreme"
     }
   ],
-  "world_seed": 1763649615,
-  "end_flag": "lose"
+  "world_seed": 1763654330,
+  "end_flag": "win"
 }
