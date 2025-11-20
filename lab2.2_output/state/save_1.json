@@ -1,0 +1,73 @@
+{
+  "hp": 0,
+  "turn": 7,
+  "notes": [
+    "這不是妳的錯，是這片地圖太難。",
+    "聽從內心，至少過年有話聊。",
+    "別擔心，你不是油煙機。",
+    "愛情不只是兩個人的事，還有家族的期待。",
+    "人生無對錯，只有選擇與自由。",
+    "過年拷問，真是滿滿的愛與溫馨。"
+  ],
+  "logs": [
+    {
+      "turn": 1,
+      "stage": "第一關：出生決定性別",
+      "choice": "female",
+      "hp_change": -30,
+      "hp_after": 70,
+      "note": "這不是妳的錯，是這片地圖太難。",
+      "tag": "female_hard_mode"
+    },
+    {
+      "turn": 2,
+      "stage": "第二關：大學志願",
+      "choice": "生物機電系",
+      "hp_change": -10,
+      "hp_after": 60,
+      "note": "聽從內心，至少過年有話聊。",
+      "tag": "major_other"
+    },
+    {
+      "turn": 3,
+      "stage": "第三關：第一份工作",
+      "choice": "連鎖餐飲店基層員工",
+      "hp_change": -15,
+      "hp_after": 45,
+      "note": "別擔心，你不是油煙機。",
+      "tag": "job_low_status"
+    },
+    {
+      "turn": 4,
+      "stage": "第四關：結婚對象",
+      "choice": "收入較低但非常契合的靈魂伴侶",
+      "hp_change": -15,
+      "hp_after": 30,
+      "note": "愛情不只是兩個人的事，還有家族的期待。",
+      "tag": "partner_family_disapproved"
+    },
+    {
+      "turn": 5,
+      "stage": "第五關：生小孩與否",
+      "choice": "不生小孩",
+      "hp_change": -25,
+      "hp_after": 5,
+      "note": "人生無對錯，只有選擇與自由。",
+      "tag": "child_none"
+    },
+    {
+      "turn": 6,
+      "stage": "第六關：過年大拷問",
+      "question": "你這麼大了，為什麼還沒有對象？是不是太挑了？",
+      "answer": "等你過世我就會娶了",
+      "difficulty": "high",
+      "answer_style": "defensive",
+      "hp_change": -35,
+      "hp_after": 0,
+      "note": "過年拷問，真是滿滿的愛與溫馨。",
+      "tag": "newyear_defensive_high"
+    }
+  ],
+  "world_seed": 1763649615,
+  "end_flag": "lose"
+}
