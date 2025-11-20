@@ -136,7 +136,6 @@ def save_state(state: Dict[str, Any]):
 
 
 def save_summary(review: str):
-    """儲存遊戲人生回顧文字到 summary_1.txt"""
     ensure_output_dirs()
     with SUMMARY_PATH.open("w", encoding="utf-8") as f:
         f.write(review)
@@ -429,9 +428,10 @@ def play_stage_3_job(state: Dict[str, Any]) -> Dict[str, Any]:
         "規則：\n"
         "1. 三個工作請務必各自不同。\n"
         "2. description 80～140 字，描述現實壓力、家庭期待與工作氛圍。\n"
-        "3. hidden_hp 範圍 -45、0、+20(由低到高分別為不符合到符合亞洲家族期待)。(可以盡可能極端）\n"
+        "3. hidden_hp 範圍 -45～+20(由低到高分別為不符合到符合亞洲家族期待)。(可以盡可能極端）\n"
         "4. tag = job_high_pay / job_low_status / job_stable / job_creative 等英文字標籤。\n"
         "5. 請務必輸出【合法 JSON】（最外層為大括號）。\n"
+        "6. hidden_hp 要盡可能給極端一點"
     )
 
 
@@ -539,10 +539,12 @@ def play_stage_4_marriage(state: Dict[str, Any]) -> Dict[str, Any]:
         "規則：\n"
         "1. 三位對象必須彼此明顯不同（符合亞洲期待的美德婦女、亞洲父母尚可接受的類型、亞洲父母不能接受的類型）\n"
         "2. description 需 80～140 字，描述家庭期待、性格氛圍、可能的社會壓力。\n"
-        "3. hidden_hp = +10、0、-45。（由高到低分別為符合期待的、尚可的、不能接受的）\n"
+        "3. hidden_hp = +10～-45。（由高到低分別為符合期待的、尚可的、不能接受的）\n"
         "4. tag = partner_family_approved / partner_balanced / partner_disapproved 等英文字。\n"
         "5. 請務必輸出標準 JSON（最外層需為物件）。"
         "6. title必須要是他的類型、並且內容不要特別提及男女）。"
+        "7. 可以多腦補選擇對象後的劇情，可以戲劇化一點。"
+        "8. hidden_hp的選擇要基於後續劇情發展"
     )
 
     user_prompt = "請產生三位結婚對象的選項，只輸出 JSON。"
@@ -773,7 +775,7 @@ def play_stage_6_newyear(state: Dict[str, Any]) -> Dict[str, Any]:
     difficulty = q["difficulty"]
 
     print(f"長輩開口了：\n「{question}」\n")
-    print("請輸入你打算怎麼回答（記得：不能過度炫耀，也不能太自貶）：")
+    print("請輸入你打算怎麼回答：")
     answer = get_player_input("你的回答是：", state)
 
     style = classify_newyear_answer(question, answer)
@@ -817,8 +819,6 @@ def play_stage_6_newyear(state: Dict[str, Any]) -> Dict[str, Any]:
 
     print("\n【結果】")
     print(outcome["result"])
-    print(f"\n【難度等級】{difficulty}")
-    print(f"【回答風格】{style}")
     print(f"【HP 變化】{hp_change} → 目前 HP：{state['hp']}")
     print(f"【人生小筆記】{outcome['note']}\n")
 
